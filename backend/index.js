@@ -1,62 +1,61 @@
 const express = require("express");
 const { createTodo, updateTodo } = require("./types");
-const todo = require("./db.js"); // Import the todo model
-const zod = require("zod");
+const { todo } = require("./db");
+
 const app = express();
 
 app.use(express.json());
 
-app.post("/todo", async (req, res) => {
-  const createPayload = req.body;
-  const parsedPayload = createTodo.safeParse(createPayload);
-  if (!parsedPayload.success) {
-    res.status(411).json({
-      msg: "You passed the wrong inputs",
-    });
-    return;
-  }
-  // else put it in mongodb
-  await todo.create({
-    title: createPayload.title,
-    description: createPayload.description,
-    completed: false,
-  });
+app.post("/todo", async function(req, res) {
+    const createPayload = req.body;
+    const parsedPayload = createTodo.safeParse(createPayload);
 
-  res.json({
-    msg: "Todo Created",
-  });
-});
+    if (!parsedPayload.success) {
+        res.status(411).json({
+            msg: "You sent the wrong inputs",
+        })
+        return;
+    }
+    // put it in mongodb
+    await todo.create({
+        title: createPayload.title,
+        description: createPayload.description,
+        completed: false
+    })
 
-app.get("/todos", async (req, res) => {
-  const todos = await todo.find({});
+    res.json({
+        msg: "Todo created"
+    })
+})
 
-  res.json({
-    todos,
-  });
-});
+app.get("/todos", async function(req, res) {
+    const todos = await todo.find({});
 
-app.put("/completed", async (req, res) => {
-  const updatePayload = req.body;
-  const parsedPayload = updateTodo.safeParse(updatePayload);
+    res.json({
+        todos
+    })
 
-  if (!parsedPayload.success) {
-    res.status(411).json({
-      msg: "error",
-    });
-    return;
-  }
+})
 
-  // else put and mark as completed
-  await todo.updateOne(
-    { _id: updatePayload.id }, // Filter to find the document to update
-    { $set: { completed: true } } // Update operation
-  );
+app.put("/completed", async function(req, res) {
+    const updatePayload = req.body;
+    const parsedPayload = updateTodo.safeParse(updatePayload);
+    if (!parsedPayload.success) {
+        res.status(411).json({
+            msg: "You sent the wrong inputs",
+        })
+        return;
+    }
 
-  res.json({
-    msg: "Todo Updated",
-  });
-});
+    await todo.update({
+        _id: req.body.id
+    }, {
+      completed: true  
+    })
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+    res.json({
+        msg: "Todo marked as completed"
+    })
+})
+
+app.listen(3000);
